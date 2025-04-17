@@ -1,9 +1,8 @@
-from pyrogram import Client, filters
-from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from utils import get_datetime_str, create_html_file
 import requests
 import json
-import os
-from utils import get_datetime_str, create_html_file
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from pyrogram import Client, filters
 
 api = 'https://api.classplusapp.com/v2'
 
@@ -22,6 +21,8 @@ headers = {
     'user-agent'     : 'Mobile-Android',
     'webengage-luid' : '00000187-6fe4-5d41-a530-26186858be4c'
 }
+
+client_data = {}
 
 # Helper function to recursively fetch course content
 def get_course_content(session, course_id, folder_id=0):
@@ -130,8 +131,6 @@ async def classplus_login(client: Client, message: Message):
 
     except Exception as e:
         await message.reply(f"**Error:** `{e}`")
-
-client_data = {}
 
 @Client.on_callback_query(filters.regex(r'^classplus_course_(\d+)$'))
 async def download_course(client: Client, callback_query: CallbackQuery):
