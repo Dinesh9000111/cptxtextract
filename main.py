@@ -20,8 +20,6 @@ from utils import get_datetime_str, create_html_file
 
 api = 'https://api.classplusapp.com/v2'
 
-# ------------------------------------------------------------------------------------------------------------------------------- #
-
 def create_html_file(file_name, batch_name, contents):
     tbody = ''
     parts = contents.split('\n')
@@ -67,7 +65,7 @@ def get_course_content(session, course_id, folder_id=0):
 
                 headers = {
                     "Host": "api.classplusapp.com",
-                    "x-access-token": "your_access_token_here",
+                    "x-access-token": session.headers.get('x-access-token', ''),
                     "User-Agent": "Mobile-Android",
                     "Accept": "application/json, text/plain, */*",
                     "Origin": "https://web.classplusapp.com",
@@ -77,12 +75,12 @@ def get_course_content(session, course_id, folder_id=0):
 
                 params = {'contentId': id}
 
-                r = requests.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
-                url = r.json()['url']
-
-                content = f'{name}:{url}\n'
-                fetched_contents += content
-
+                r = session.get('https://api.classplusapp.com/cams/uploader/video/jw-signed-url', headers=headers, params=params)
+                if r.status_code == 200:
+                    url = r.json().get('url', '')
+                    if url:
+                        content = f'{name}:{url}\n'
+                        fetched_contents += content
             else:
                 name = content.get('name', '')
                 url = content.get('url', '')
@@ -90,8 +88,6 @@ def get_course_content(session, course_id, folder_id=0):
                 fetched_contents += content
 
     return fetched_contents
-
-# ------------------------------------------------------------------------------------------------------------------------------- #
 
 async def classplus_txt(app, message):
     headers2 = {
@@ -148,26 +144,27 @@ async def classplus_txt(app, message):
                             }
 
                             res = session.post(f'{api}/users/verify', data=json.dumps(data))
-                            res = res.json()
+                            res_json = res.json()
 
-                            if res['status'] == 'success':
-                                await app.send_message(message.chat.id, res)
-                                user_id = res['data']['user']['id']
-                                token = res['data']['token']
+                            if res_json.get('status') == 'success':
+                                await app.send_message(message.chat.id, res_json)
+                                user_id = res_json['data']['user']['id']
+                                token = res_json['data']['token']
                                 session.headers['x-access-token'] = token
 
                                 await message.reply_text(f"Your access token:\n\n{token}")
                                 logged_in = True
                             else:
-                                raise Exception('Failed to verify OTP.')
+                                error_message = res_json.get('message', 'Failed to verify OTP.')
+                                raise Exception(f"OTP Verification Failed: {error_message}")
                         else:
-                            raise Exception('Invalid OTP.')
+                            raise Exception('Invalid OTP format. Only digits are allowed.')
                     else:
                         raise Exception('Failed to generate OTP.')
                 else:
                     raise Exception('Invalid Organisation Code.')
             else:
-                raise Exception('Invalid Credentials.')
+                raise Exception('Invalid Credentials format.')
 
         else:
             token = creds.strip()
@@ -238,8 +235,6 @@ async def classplus_txt(app, message):
     except Exception as e:
         await message.reply_text(f"Error: {e}")
         print(f"Error: {e}")
-
-# ------------------------------------------------------------------------------------------------------------------------------- #
 
 # Telegram Bot Setup
 app = Client(
