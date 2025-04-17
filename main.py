@@ -1,9 +1,22 @@
 import os
+import sys
+import re
 import json
-import requests
 import asyncio
-from pyrogram import Client, filters
+import logging
+import requests
+import subprocess
+import datetime
+from logging.handlers import RotatingFileHandler
+
+from pyrogram import Client, filters, idle
 from pyrogram.types import Message
+from pyromod import listen
+
+import helper
+import tgcrypto
+from details import API_ID, API_HASH, BOT_TOKEN, OWNER_ID, SUDO_USERS, CHANNEL_ID
+from utils import get_datetime_str, create_html_file
 
 api = 'https://api.classplusapp.com/v2'
 
@@ -242,5 +255,5 @@ async def handle_classplus(client, message):
 if __name__ == "__main__":
     app.start()
     print("Bot is Running...")
-    app.idle()
+    idle()
     app.stop()
